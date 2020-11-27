@@ -1,0 +1,56 @@
+version: 0.2
+
+phases:
+
+  install:
+    runtime-versions:
+      golang: 1.12
+
+
+    commands:
+
+    # Use go modules rather than GOPATH
+    - export GO111MODULE="on"
+
+    # Install golint
+    - go get golang.org/x/lint/golint@v0.0.0-20200302205851-738671d3881b
+
+    # Install Testify to use common assertions and mocks in tests
+    - go get -u github.com/stretchr/testify@v1.6.1
+
+  pre_build:
+    commands:
+
+    # Fetch all dependencies
+    - go get ./...
+
+    # Ensure code passes all lint tests
+    - golint -set_exit_status
+
+    # Check for common Go application problems with 'go vet'
+    - go vet .
+
+    # Run all tests included with our application
+    - go test .
+
+  build:
+    commands:
+
+    # Build our go application
+    - go build -o main
+
+    # Copy static assets to S3, and package application with AWS CloudFormation/SAM
+    - aws s3 cp --recursive public/ s3://$WEBSITE_S3_BUCKET/public/ --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers
+    - sed -i -e "s|assets/|$WEBSITE_S3_PREFIX/public/assets/|g" public/index.html
+    - aws cloudformation package --template template.yml --s3-bucket $S3_BUCKET --output-template template-export.yml
+
+  post_build:
+    commands:
+    # Do not remove this statement. This command is required for AWS CodeStar projects.
+    # Update the AWS Partition, AWS Region, account ID and project ID in the project ARN on template-configuration.json file so AWS CloudFormation can tag project resources.
+    - sed -i.bak 's/\$PARTITION\$/'${PARTITION}'/g;s/\$AWS_REGION\$/'${AWS_REGION}'/g;s/\$ACCOUNT_ID\$/'${ACCOUNT_ID}'/g;s/\$PROJECT_ID\$/'${PROJECT_ID}'/g' template-configuration.json
+
+artifacts:
+  files:
+  - template-export.yml
+  - template-configuration.json

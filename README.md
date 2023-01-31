@@ -16,7 +16,7 @@ This sample includes:
 * template.yml - this file contains the AWS Serverless Application Model (AWS SAM) used
   by AWS CloudFormation to deploy your application to AWS Lambda and Amazon API
   Gateway.
-* template-configuration.json - this file contains the project ARN with placeholders used for tagging resources with the project ID  
+* template-configuration.json - this file contains the project ARN with placeholders used for tagging resources with the project ID  .
 
 Getting Started
 ---------------
